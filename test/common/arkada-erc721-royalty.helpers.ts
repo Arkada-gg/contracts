@@ -4,10 +4,15 @@ import { BigNumber, BigNumberish } from 'ethers';
 
 import { OptionalCommonParams } from './common.helpers';
 
-import { ArkadaERC721Royalty } from '../../typechain-types';
+import {
+  ArkadaERC721Royalty,
+  ArkadaERC721RoyaltyWithTrade,
+} from '../../typechain-types';
 
 type CommonParams = {
-  arkadaErc721RoyaltyContract: ArkadaERC721Royalty;
+  arkadaErc721RoyaltyContract:
+    | ArkadaERC721Royalty
+    | ArkadaERC721RoyaltyWithTrade;
   owner: SignerWithAddress;
 };
 

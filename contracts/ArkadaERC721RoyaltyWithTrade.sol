@@ -2,11 +2,12 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 
-import "./interfaces/IArkadaRewarderWithTrade.sol";
+import "./interfaces/IArkadaERC721RoyaltyWithTrade.sol";
 
 /**
  * @title ArkadaERC721RoyaltyWithTrade
@@ -17,7 +18,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     Initializable,
     ERC721RoyaltyUpgradeable,
     OwnableUpgradeable,
-    IArkadaRewarderWithTrade
+    IArkadaERC721RoyaltyWithTrade
 {
     using Counters for Counters.Counter;
 
@@ -60,6 +61,14 @@ contract ArkadaERC721RoyaltyWithTrade is
 
     string private _baseTokenURI;
 
+    address public constant DEAD_ADDRESS =
+        address(0x000000000000000000000000000000000000dEaD);
+
+    /**
+     * @dev leaving a storage gap for futures updates
+     */
+    uint256[50] private __gap;
+
     function initialize(
         string memory _name,
         string memory _symbol,
@@ -94,7 +103,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function mintNFT() external payable {
         require(block.timestamp <= mintDeadline, "Locked");
@@ -117,11 +126,11 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721RoyaltyWithTrade
      */
     function tradeNft(uint256 tokenId) external {
         // Burn the old NFT by transferring it to the zero address
-        tradeERC721.safeTransferFrom(msg.sender, address(0), tokenId);
+        tradeERC721.safeTransferFrom(msg.sender, DEAD_ADDRESS, tokenId);
 
         // Mint a new NFT to the user
         totalMinted.increment();
@@ -133,7 +142,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function mintNFTTo(address to) external onlyOwnerOrOperator {
         totalMinted.increment();
@@ -147,7 +156,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function setMintPrice(uint256 _mintPrice) external onlyOwner {
         require(_mintPrice > 0, "Invalid price");
@@ -158,7 +167,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function setMintDeadline(uint256 _mintDeadline) external onlyOwner {
         mintDeadline = _mintDeadline;
@@ -167,7 +176,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function setPaymentRecipient(address _paymentRecipient) external onlyOwner {
         require(_paymentRecipient != address(0), "Invalid recipient");
@@ -178,7 +187,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function setOperator(address _operator) external onlyOwner {
         operator = _operator;
@@ -187,7 +196,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function setRoyalty(
         address receiver,
@@ -202,7 +211,7 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function setOnePerWallet(bool enabled) external onlyOwner {
         require(enabled != onlyOnePerWallet, "Already in this state");
@@ -213,18 +222,18 @@ contract ArkadaERC721RoyaltyWithTrade is
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721RoyaltyWithTrade
      */
     function setTradeERC721(address _tradeERC721) external onlyOwner {
         require(_tradeERC721 != address(0), "Invalid trade ERC721");
 
-        tradeERC721 = _tradeERC721;
+        tradeERC721 = IERC721(_tradeERC721);
 
         emit TradeERC721Updated(msg.sender, _tradeERC721);
     }
 
     /**
-     * @inheritdoc IArkadaRewarderWithTrade
+     * @inheritdoc IArkadaERC721Royalty
      */
     function setBaseURI(string memory baseURI_) external onlyOwner {
         _baseTokenURI = baseURI_;

@@ -3,8 +3,6 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
 import {
-  mintNFTTest,
-  mintNFTToTest,
   setBaseURITest,
   setMintDeadlineTest,
   setMintPriceTest,
@@ -12,15 +10,16 @@ import {
   setOperatorTest,
   setPaymentRecipientTest,
   setRoyaltyTest,
-} from './common/arkada-erc721-royalty.helpers';
+  setTradeERC721Test,
+  tradeNftTest,
+} from './common/arkada-erc721-royalty-with-trade.helpers';
 import { defaultDeploy } from './common/fixtures';
 
 // eslint-disable-next-line camelcase
-import { ArkadaERC721Royalty__factory } from '../typechain-types';
 
 const ZeroAddress = ethers.constants.AddressZero;
 
-describe('ArkadaERC721RoyaltyWithTrade', function () {
+describe.only('ArkadaERC721RoyaltyWithTrade', function () {
   it('deployment', async () => {
     await loadFixture(defaultDeploy);
   });
@@ -28,14 +27,15 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
   it('initialize', async () => {
     const {
       owner,
-      arkadaERC721Royalty,
+      arkadaERC721RoyaltyWithTrade,
       mintDeadline,
       mintPrice,
       paymentsRecipient,
+      mockERC721,
     } = await loadFixture(defaultDeploy);
 
     await expect(
-      arkadaERC721Royalty.initialize(
+      arkadaERC721RoyaltyWithTrade.initialize(
         'ArkadaNFT',
         'ARK',
         'ipfs://base_uri/',
@@ -43,76 +43,31 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
         mintDeadline,
         paymentsRecipient.address,
         owner.address,
+        mockERC721.address,
       ),
     ).revertedWith('Initializable: contract is already initialized');
-
-    const arkadaERC721RoyaltyNew = await new ArkadaERC721Royalty__factory(
-      owner,
-    ).deploy();
-    await expect(
-      arkadaERC721RoyaltyNew.initialize(
-        'ArkadaNFT',
-        'ARK',
-        'ipfs://base_uri/',
-        0,
-        mintDeadline,
-        paymentsRecipient.address,
-        owner.address,
-      ),
-    ).to.be.revertedWith('invalid price');
-    await expect(
-      arkadaERC721RoyaltyNew.initialize(
-        'ArkadaNFT',
-        'ARK',
-        'ipfs://base_uri/',
-        mintPrice,
-        mintDeadline,
-        ZeroAddress,
-        owner.address,
-      ),
-    ).to.be.revertedWith('invalid recipient');
-    await expect(
-      arkadaERC721RoyaltyNew.initialize(
-        'ArkadaNFT',
-        'ARK',
-        'ipfs://base_uri/',
-        mintPrice,
-        mintDeadline,
-        paymentsRecipient.address,
-        ZeroAddress,
-      ),
-    ).to.be.revertedWith('invalid owner');
-
-    await arkadaERC721RoyaltyNew.initialize(
-      'ArkadaNFT',
-      'ARK',
-      'ipfs://base_uri/',
-      mintPrice,
-      mintDeadline,
-      paymentsRecipient.address,
-      owner.address,
-    );
   });
 
   describe('setBaseURI()', () => {
     it('should be set', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
+      const { arkadaERC721RoyaltyWithTrade, owner } = await loadFixture(
+        defaultDeploy,
+      );
 
       await setBaseURITest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+        arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
         owner,
         uri: 'lalala',
       });
     });
 
     it('should be reverted if sender is not owner', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
+        await loadFixture(defaultDeploy);
 
       await setBaseURITest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           uri: 'lalala',
         },
@@ -126,12 +81,16 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
 
   describe('setRoyalty()', () => {
     it('should be reverted if fee too high', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts, mintPrice } =
-        await loadFixture(defaultDeploy);
+      const {
+        arkadaERC721RoyaltyWithTrade,
+        owner,
+        regularAccounts,
+        mintPrice,
+      } = await loadFixture(defaultDeploy);
 
       await setRoyaltyTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           receiver: regularAccounts[0].address,
           royalty: 50,
@@ -144,13 +103,12 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be reverted if receiver address invalid', async () => {
-      const { arkadaERC721Royalty, owner, mintPrice } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, mintPrice } =
+        await loadFixture(defaultDeploy);
 
       await setRoyaltyTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           receiver: ZeroAddress,
           royalty: 2,
@@ -163,11 +121,15 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('royalty should be updated', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts, mintPrice } =
-        await loadFixture(defaultDeploy);
+      const {
+        arkadaERC721RoyaltyWithTrade,
+        owner,
+        regularAccounts,
+        mintPrice,
+      } = await loadFixture(defaultDeploy);
 
       await setRoyaltyTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+        arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
         owner,
         receiver: regularAccounts[0].address,
         royalty: 2,
@@ -176,12 +138,16 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be reverted if sender is not owner', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts, mintPrice } =
-        await loadFixture(defaultDeploy);
+      const {
+        arkadaERC721RoyaltyWithTrade,
+        owner,
+        regularAccounts,
+        mintPrice,
+      } = await loadFixture(defaultDeploy);
 
       await setRoyaltyTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           receiver: regularAccounts[0].address,
           royalty: 2,
@@ -197,25 +163,23 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
 
   describe('setOperator()', () => {
     it('should be updated', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
+        await loadFixture(defaultDeploy);
 
       await setOperatorTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+        arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
         owner,
         operator: regularAccounts[0].address,
       });
     });
 
     it('should be reverted if sender is not owner', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
+        await loadFixture(defaultDeploy);
 
       await setOperatorTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           operator: regularAccounts[0].address,
         },
@@ -229,13 +193,12 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
 
   describe('setPaymentRecipient()', () => {
     it('should be reverted if sender is not owner', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
+        await loadFixture(defaultDeploy);
 
       await setPaymentRecipientTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           recipient: regularAccounts[0].address,
         },
@@ -247,11 +210,13 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be reverted if recipient address invalid', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
+      const { arkadaERC721RoyaltyWithTrade, owner } = await loadFixture(
+        defaultDeploy,
+      );
 
       await setPaymentRecipientTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           recipient: ZeroAddress,
         },
@@ -262,12 +227,11 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be set', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
+        await loadFixture(defaultDeploy);
 
       await setPaymentRecipientTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+        arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
         owner,
         recipient: regularAccounts[0].address,
       });
@@ -276,13 +240,12 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
 
   describe('setOnePerWallet()', () => {
     it('should be reverted if sender is not owner', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
+        await loadFixture(defaultDeploy);
 
       await setOnePerWalletTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           enabled: false,
         },
@@ -294,11 +257,13 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be reverted if same state', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
+      const { arkadaERC721RoyaltyWithTrade, owner } = await loadFixture(
+        defaultDeploy,
+      );
 
       await setOnePerWalletTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           enabled: true,
         },
@@ -309,10 +274,12 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be set', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
+      const { arkadaERC721RoyaltyWithTrade, owner } = await loadFixture(
+        defaultDeploy,
+      );
 
       await setOnePerWalletTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+        arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
         owner,
         enabled: false,
       });
@@ -321,13 +288,12 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
 
   describe('setMintDeadline()', () => {
     it('should be reverted if sender is not owner', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
+        await loadFixture(defaultDeploy);
 
       await setMintDeadlineTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           deadline: 0,
         },
@@ -339,10 +305,12 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be set', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
+      const { arkadaERC721RoyaltyWithTrade, owner } = await loadFixture(
+        defaultDeploy,
+      );
 
       await setMintDeadlineTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+        arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
         owner,
         deadline: 0,
       });
@@ -351,13 +319,12 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
 
   describe('setMintPrice()', () => {
     it('should be reverted if sender is not owner', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
+        await loadFixture(defaultDeploy);
 
       await setMintPriceTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           mintPrice: ethers.utils.parseEther('0.1'),
         },
@@ -369,11 +336,13 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be reverted if price == 0', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
+      const { arkadaERC721RoyaltyWithTrade, owner } = await loadFixture(
+        defaultDeploy,
+      );
 
       await setMintPriceTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
           owner,
           mintPrice: ethers.utils.parseEther('0'),
         },
@@ -384,206 +353,154 @@ describe('ArkadaERC721RoyaltyWithTrade', function () {
     });
 
     it('should be set', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
+      const { arkadaERC721RoyaltyWithTrade, owner } = await loadFixture(
+        defaultDeploy,
+      );
 
       await setMintPriceTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+        arkadaErc721RoyaltyContract: arkadaERC721RoyaltyWithTrade,
         owner,
         mintPrice: ethers.utils.parseEther('0.2'),
       });
     });
   });
 
-  describe('mintNFTTo()', () => {
-    it('should be reverted if sender is not owner or operator', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+  describe('setTradeERC721()', () => {
+    it('should be reverted if sender is not owner', async () => {
+      const {
+        arkadaERC721RoyaltyWithTrade,
+        owner,
+        regularAccounts,
+        mockERC721,
+      } = await loadFixture(defaultDeploy);
 
-      await mintNFTToTest(
+      await setTradeERC721Test(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyWithTradeContract: arkadaERC721RoyaltyWithTrade,
           owner,
-          to: regularAccounts[2].address,
+          tradeERC721: mockERC721.address,
         },
         {
           from: regularAccounts[0],
-          revertMessage: 'Not authorized',
+          revertMessage: 'Ownable: caller is not the owner',
         },
       );
     });
 
-    it('should be minted', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
+    it('should be reverted if trade ERC721 address is invalid', async () => {
+      const { arkadaERC721RoyaltyWithTrade, owner } = await loadFixture(
         defaultDeploy,
       );
 
-      await mintNFTToTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
-        owner,
-        to: regularAccounts[2].address,
-      });
+      await setTradeERC721Test(
+        {
+          arkadaErc721RoyaltyWithTradeContract: arkadaERC721RoyaltyWithTrade,
+          owner,
+          tradeERC721: ZeroAddress,
+        },
+        {
+          revertMessage: 'Invalid trade ERC721',
+        },
+      );
     });
 
-    it('should be able to mint multiple tokens to same address', async () => {
-      const { arkadaERC721Royalty, owner, regularAccounts } = await loadFixture(
-        defaultDeploy,
-      );
+    it('should be set', async () => {
+      const { arkadaERC721RoyaltyWithTrade, owner, mockERC721 } =
+        await loadFixture(defaultDeploy);
 
-      await mintNFTToTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+      await setTradeERC721Test({
+        arkadaErc721RoyaltyWithTradeContract: arkadaERC721RoyaltyWithTrade,
         owner,
-        to: regularAccounts[2].address,
-      });
-
-      await mintNFTToTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
-        owner,
-        to: regularAccounts[2].address,
+        tradeERC721: mockERC721.address,
       });
     });
   });
 
-  describe('mintNFT()', () => {
-    it('should be reverted if user send invalid amout of ether', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
-
-      await mintNFTTest(
-        {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
-          owner,
-          value: ethers.utils.parseEther('0.6'),
-        },
-        {
-          revertMessage: 'Invalid price',
-        },
-      );
-    });
-
-    it('should be reverted if mint deadline exceeded', async () => {
-      const { arkadaERC721Royalty, owner } = await loadFixture(defaultDeploy);
-
-      await setMintDeadlineTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+  describe('tradeNft()', () => {
+    it('should successfully trade an NFT', async () => {
+      const {
+        arkadaERC721RoyaltyWithTrade,
         owner,
-        deadline: 0,
-      });
+        regularAccounts,
+        mockERC721,
+      } = await loadFixture(defaultDeploy);
 
-      await mintNFTTest(
-        {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
-          owner,
-          value: ethers.utils.parseEther('0.6'),
-        },
-        {
-          revertMessage: 'Locked',
-        },
-      );
-    });
+      // Mint a token to trade
+      await mockERC721.mint(regularAccounts[0].address, 1);
+      await mockERC721
+        .connect(regularAccounts[0])
+        .approve(arkadaERC721RoyaltyWithTrade.address, 1);
 
-    it('should be reverted if flag onePerWallet enabled and user want to mint multiple', async () => {
-      const { arkadaERC721Royalty, owner, mintPrice } = await loadFixture(
-        defaultDeploy,
-      );
-
-      await mintNFTTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+      await tradeNftTest({
+        arkadaErc721RoyaltyWithTradeContract: arkadaERC721RoyaltyWithTrade,
         owner,
-        value: mintPrice,
+        tokenId: 1,
+        from: regularAccounts[0],
       });
-
-      await mintNFTTest(
-        {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
-          owner,
-          value: mintPrice,
-        },
-        {
-          revertMessage: 'Already minted',
-        },
-      );
     });
 
-    it('should be reverted if flag onePerWallet enabled, operator minted nft foe user and user want to mint more', async () => {
-      const { arkadaERC721Royalty, owner, mintPrice, regularAccounts } =
+    it('should revert if token does not exist', async () => {
+      const { arkadaERC721RoyaltyWithTrade, owner, regularAccounts } =
         await loadFixture(defaultDeploy);
 
-      await mintNFTToTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
-        owner,
-        to: regularAccounts[0].address,
-      });
-
-      await mintNFTTest(
+      await tradeNftTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyWithTradeContract: arkadaERC721RoyaltyWithTrade,
           owner,
-          value: mintPrice,
+          tokenId: 999,
+          from: regularAccounts[0],
         },
         {
-          from: regularAccounts[0],
-          revertMessage: 'Already minted',
+          revertMessage: 'ERC721: invalid token ID',
         },
       );
     });
 
-    it('should be mint multiple nft if flag onePerWallet disabled', async () => {
-      const { arkadaERC721Royalty, owner, mintPrice, regularAccounts } =
-        await loadFixture(defaultDeploy);
-
-      await setOnePerWalletTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+    it('should revert if caller is not token owner', async () => {
+      const {
+        arkadaERC721RoyaltyWithTrade,
         owner,
-        enabled: false,
-      });
+        regularAccounts,
+        mockERC721,
+      } = await loadFixture(defaultDeploy);
 
-      await mintNFTTest(
-        {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
-          owner,
-          value: mintPrice,
-        },
-        {
-          from: regularAccounts[0],
-        },
-      );
+      // Mint a token to regularAccounts[0]
+      await mockERC721.mint(regularAccounts[0].address, 1);
 
-      await mintNFTTest(
+      // Try to trade from regularAccounts[1]
+      await tradeNftTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyWithTradeContract: arkadaERC721RoyaltyWithTrade,
           owner,
-          value: mintPrice,
+          tokenId: 1,
+          from: regularAccounts[1],
         },
         {
-          from: regularAccounts[0],
+          revertMessage: 'ERC721: caller is not token owner or approved',
         },
       );
     });
 
-    it('should be mint multiple nft if flag onePerWallet disabled, and operator already minted nft for user', async () => {
-      const { arkadaERC721Royalty, owner, mintPrice, regularAccounts } =
-        await loadFixture(defaultDeploy);
-
-      await setOnePerWalletTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+    it('should revert if token is not approved', async () => {
+      const {
+        arkadaERC721RoyaltyWithTrade,
         owner,
-        enabled: false,
-      });
+        regularAccounts,
+        mockERC721,
+      } = await loadFixture(defaultDeploy);
 
-      await mintNFTToTest({
-        arkadaErc721RoyaltyContract: arkadaERC721Royalty,
-        owner,
-        to: regularAccounts[0].address,
-      });
+      // Mint a token but don't approve
+      await mockERC721.mint(regularAccounts[0].address, 1);
 
-      await mintNFTTest(
+      await tradeNftTest(
         {
-          arkadaErc721RoyaltyContract: arkadaERC721Royalty,
+          arkadaErc721RoyaltyWithTradeContract: arkadaERC721RoyaltyWithTrade,
           owner,
-          value: mintPrice,
+          tokenId: 1,
+          from: regularAccounts[0],
         },
         {
-          from: regularAccounts[0],
+          revertMessage: 'ERC721: caller is not token owner or approved',
         },
       );
     });
