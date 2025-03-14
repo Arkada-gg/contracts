@@ -34,10 +34,8 @@ interface IArkadaRewarder {
      * @param users Array of user addresses
      * @param amounts Array of reward amounts in wei
      */
-    function setRewards(
-        address[] calldata users,
-        uint256[] calldata amounts
-    ) external;
+    function setRewards(address[] calldata users, uint256[] calldata amounts)
+        external;
 
     /**
      * @notice Claims rewards for the caller

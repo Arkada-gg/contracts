@@ -2,8 +2,9 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumberish } from 'ethers';
 
-import { ArkadaERC721RoyaltyWithTrade } from '../../typechain-types';
 import { OptionalCommonParams } from './common.helpers';
+
+import { ArkadaERC721RoyaltyWithTrade } from '../../typechain-types';
 
 type CommonParams = {
   arkadaErc721RoyaltyWithTradeContract: ArkadaERC721RoyaltyWithTrade;
@@ -52,7 +53,7 @@ interface ITradeNftTest extends CommonParams {
   from: SignerWithAddress;
 }
 export const tradeNftTest = async (
-  { arkadaErc721RoyaltyWithTradeContract, owner, tokenId, from }: ITradeNftTest,
+  { arkadaErc721RoyaltyWithTradeContract, tokenId, from }: ITradeNftTest,
   opt?: OptionalCommonParams,
 ) => {
   const sender = opt?.from ?? from;

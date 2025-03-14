@@ -198,10 +198,10 @@ contract ArkadaERC721RoyaltyWithTrade is
     /**
      * @inheritdoc IArkadaERC721Royalty
      */
-    function setRoyalty(
-        address receiver,
-        uint96 feePercent
-    ) external onlyOwner {
+    function setRoyalty(address receiver, uint96 feePercent)
+        external
+        onlyOwner
+    {
         require(feePercent <= 1000, "Fee too high");
         require(receiver != address(0), "Invalid receiver");
 
@@ -256,9 +256,12 @@ contract ArkadaERC721RoyaltyWithTrade is
      * @param tokenId token id
      * @return token URI
      */
-    function tokenURI(
-        uint256 tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
         require(
             _exists(tokenId),
             "ERC721Metadata: URI query for nonexistent token"
