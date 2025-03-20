@@ -17,15 +17,15 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log('Deploying ArkadaERC721RoyaltyWithTrade...');
 
   // initialise params <=========
-  const NAME = 'Arkada Shogun: Veil Piercer Helmet';
-  const SYMBOL = 'ArkadaShogunHelmet';
+  const NAME = 'Arkada Shogun: The Whispering Void Gauntlets';
+  const SYMBOL = 'ArkadaShogunGauntlets';
   const BASE_URI =
-    'https://ipfs.io/ipfs/bafybeicsrdaqjdvbkhpn3ixuqvff46zb5jzhpcihuistn3psruipdrrzky';
-  const MINT_PRICE = hre.ethers.utils.parseEther('0.005');
-  const MINT_DEADLINE = Math.floor(Date.now() / 1000) + 86400 * 35; // 30 days from now
+    'https://ipfs.io/ipfs/bafybeif4wgv6w6bx3owmk25k5qj6yvjprazccsejjzhf5lj6dianelqfxq';
+  const MINT_PRICE = hre.ethers.utils.parseEther('0.002');
+  const MINT_DEADLINE = Math.floor(Date.now() / 1000) - 86400 * 35; // 30 days from now
   const PAYMENT_RECIPIENT = '0x4a665E6785556624324637695C4A20465D5D7b74';
   const OWNER = '0x4a665E6785556624324637695C4A20465D5D7b74';
-  const TRADE_ERC721 = '';
+  const TRADE_ERC721 = '0x39dF84267Fda113298d4794948B86026EFD47e32';
   // =====================
 
   const deployment = await hre.upgrades.deployProxy(
