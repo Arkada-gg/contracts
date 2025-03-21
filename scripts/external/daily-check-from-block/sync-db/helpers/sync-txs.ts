@@ -50,12 +50,15 @@ export const syncTxs = async (fromBlock: number) => {
       r.address.toLowerCase(),
     );
 
-    const filteredTxs = txs.filter((tx) => {
-      const args = JSON.parse(tx.args);
-      const caller = args[0];
-      if (!caller) return false;
-      return filteredAddresses.includes(caller.toLowerCase());
-    });
+    const filteredTxs = txs
+      .filter((tx) => {
+        const args = JSON.parse(tx.args);
+        const caller = args[0];
+        if (!caller) return false;
+        return filteredAddresses.includes(caller.toLowerCase());
+      })
+      .sort((a, b) => b.block_number - a.block_number)
+      .slice(-5000);
     console.log('Total txs after filtering: ', filteredTxs.length);
     console.log('Transactions filtered...\n');
 

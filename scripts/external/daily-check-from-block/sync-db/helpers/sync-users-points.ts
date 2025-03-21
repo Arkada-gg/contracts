@@ -1,5 +1,5 @@
 import { BigNumber } from 'ethers';
-import { Client } from 'pg';
+import { Pool, PoolClient } from 'pg';
 
 import fs from 'fs';
 import path from 'path';
@@ -18,7 +18,7 @@ export interface IUserData {
 const BATCH_SIZE = 250;
 
 const getDailyPointsUserAddresses = async (
-  client: Client,
+  client: PoolClient,
   fromTimestamp: number,
 ) => {
   const result = await client.query(
@@ -34,11 +34,16 @@ const getDailyPointsUserAddresses = async (
 };
 
 export const syncUsersPoints = async (fromTimestamp: number) => {
-  const client = new Client({
-    connectionString: process.env.POSTGRES_CONNECTION_URL,
+  const pool = new Pool({
+    connectionString:
+      process.env.POSTGRES_CONNECTION_URL ||
+      'postgres://user:password@localhost:5432/arkada_db',
+    idleTimeoutMillis: 5000,
+    max: 5,
   });
+
   console.log('--------> Connecting to postgres...');
-  await client.connect();
+  const client = await pool.connect();
   console.log('--------> Postgres client connected.\n');
 
   const dir = 'scripts-data/from-block';
@@ -144,7 +149,6 @@ export const syncUsersPoints = async (fromTimestamp: number) => {
 
       const updatedUsersPointsCount = updateResult.rowCount;
       const checkHowMuchUpdatedCorrect = result.rowCount;
-      console.log(updatedUsersPointsCount, checkHowMuchUpdatedCorrect);
       if (updatedUsersPointsCount !== checkHowMuchUpdatedCorrect)
         throw new Error('Check failed');
 
@@ -280,5 +284,7 @@ export const syncUsersPoints = async (fromTimestamp: number) => {
   } catch (error) {
     await client.query('ROLLBACK');
     throw new Error((error as Error).message);
+  } finally {
+    client.release();
   }
 };

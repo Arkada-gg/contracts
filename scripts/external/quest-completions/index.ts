@@ -61,6 +61,8 @@ const func = async () => {
     totalUsersOperated += missingUsers.length;
     console.log('🚨 Users mismatch: ', missingUsers.length);
 
+    console.log(missingUsers);
+
     for (let i = 0; i < missingUsers.length; i++) {
       const userAddress = missingUsers[i].toLowerCase();
       try {
@@ -113,6 +115,7 @@ const func = async () => {
     await delay(3000);
   }
 
+  console.log('\n Total operated addresses: %s ', totalUsersOperated);
   process.exit(0);
 };
 
