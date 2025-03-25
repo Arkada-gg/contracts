@@ -47,12 +47,7 @@ interface AlchemyWebhookEvent {
   };
 }
 
-export async function formatLogToAlchemyWebhook(
-  log: any,
-): Promise<AlchemyWebhookEvent> {
-  //   const tx = await provider.getTransaction(log.transactionHash);
-  //   const receipt = await provider.getTransactionReceipt(log.transactionHash);
-  //   const block = await provider.getBlock(log.blockNumber);
+export function formatLogToAlchemyWebhook(log: any): AlchemyWebhookEvent {
   const ts = Date.now();
 
   return {

@@ -2,12 +2,10 @@ import * as hre from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Client } from 'pg';
 
-import * as crypto from 'crypto';
-
-import { formatLogToAlchemyWebhook } from './helpers/format-logs';
-import { getPyramidMintEventsAndFormat } from './helpers/get-and-format-events';
-
-import { delay } from '../../../helpers/utils';
+import { delay } from '../../../../helpers/utils';
+import { formatLogToAlchemyWebhook } from '../../helpers/format-logs';
+import { signAlchemyWebhook } from '../../helpers/sign-webhook-data';
+import { getPyramidMintEventsAndFormat } from '../helpers/get-and-format-events';
 
 const WEBHOOK_URL = process.env.ALCHEMY_WEBHOOK_URL;
 
@@ -61,25 +59,11 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
       )
       .filter((r) => !!r);
 
-    const alchemyData = await Promise.all(
-      missingLogs.map((raw) => formatLogToAlchemyWebhook(raw)),
+    const alchemyData = missingLogs.map((raw) =>
+      formatLogToAlchemyWebhook(raw),
     );
 
-    const webhookData = alchemyData.map((data) => {
-      if (!process.env.ALCHEMY_WEBHOOK_KEY) {
-        throw new Error('ALCHEMY_KEY environment variable is not set');
-      }
-      const payload = JSON.stringify(data);
-
-      // Generate HMAC-SHA256 signature using hex digest to match verification
-      const hmac = crypto.createHmac('sha256', process.env.ALCHEMY_WEBHOOK_KEY);
-      const signature = hmac.update(payload).digest('hex');
-
-      return {
-        payload,
-        signature,
-      };
-    });
+    const webhookData = alchemyData.map((data) => signAlchemyWebhook(data));
 
     // Now using webhookData to send to Alchemy
     for (const { payload, signature } of webhookData) {
