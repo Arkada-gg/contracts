@@ -82,8 +82,8 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
         );
         console.log('Status: ', res.status);
         if (res.status > 205 || res.status < 200) throw new Error('not OK');
-        console.log('Waiting for 2 secs ...\n');
-        await delay(2000);
+        console.log('Waiting for 200 ms ...\n');
+        await delay(200);
       } catch (error) {
         console.error('Failed to send webhook:', error);
       }
