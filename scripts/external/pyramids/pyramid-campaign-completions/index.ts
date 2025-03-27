@@ -9,6 +9,10 @@ import { getPyramidMintEventsAndFormat } from '../helpers/get-and-format-events'
 
 const WEBHOOK_URL = process.env.ALCHEMY_WEBHOOK_URL;
 
+const blackList = [
+  '0x4e5a45020d670523378127c6f713de543a032236718ca1e783a253840103cf59',
+];
+
 const func = async (hre: HardhatRuntimeEnvironment) => {
   const client = new Client({
     connectionString: process.env.POSTGRES_CONNECTION_URL,
@@ -50,14 +54,15 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
   try {
     // Get all missing campaign completions
     const missingCompletions = (await client.query(query, values)).rows;
-    console.log(
-      `Found ${missingCompletions.length} missing campaign completions to process\n`,
-    );
     const missingLogs = missingCompletions
       .map(
         (r) => formattedEvents.get(`${r.campaign_id}-${r.user_address}`)?.raw,
       )
-      .filter((r) => !!r);
+      .filter((r) => !!r && !blackList.includes(r.transactionHash));
+    console.log(
+      `Found ${missingLogs.length} missing campaign completions to process\n`,
+    );
+    console.log(missingLogs.map((e) => e?.transactionHash));
 
     const alchemyData = missingLogs.map((raw) =>
       formatLogToAlchemyWebhook(raw),
@@ -65,7 +70,6 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
 
     const webhookData = alchemyData.map((data) => signAlchemyWebhook(data));
 
-    // Now using webhookData to send to Alchemy
     for (const { payload, signature } of webhookData) {
       try {
         const res = await fetch(WEBHOOK_URL!, {
