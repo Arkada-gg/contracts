@@ -17,12 +17,12 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log('Deploying ArkadaERC721Royalty...');
 
   // initialise params <=========
-  const NAME = 'Arkada Shogun: Veil Piercer Helmet';
-  const SYMBOL = 'ArkadaShogunHelmet';
+  const NAME = 'Arkada Shogun: Echoing Memory Pauldrons';
+  const SYMBOL = 'ArkadaShogunPauldrons';
   const BASE_URI =
-    'https://ipfs.io/ipfs/bafybeicsrdaqjdvbkhpn3ixuqvff46zb5jzhpcihuistn3psruipdrrzky';
-  const MINT_PRICE = hre.ethers.utils.parseEther('0.005');
-  const MINT_DEADLINE = Math.floor(Date.now() / 1000) + 86400 * 35; // 30 days from now
+    'https://ipfs.io/ipfs/bafybeibntccjq4bi2mamjoe2vsbc4kesgpbu3pqt4rrjfqfsl6kissrgl4';
+  const MINT_PRICE = hre.ethers.utils.parseEther('0.01');
+  const MINT_DEADLINE = Math.floor(Date.now() / 1000) + 86400 * 37; // 30 days from now
   const PAYMENT_RECIPIENT = '0x4a665E6785556624324637695C4A20465D5D7b74';
   const OWNER = '0x4a665E6785556624324637695C4A20465D5D7b74';
   // =====================
