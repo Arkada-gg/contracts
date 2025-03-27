@@ -19,6 +19,7 @@
   },
   "rules": {
     "@typescript-eslint/no-unused-vars": "warn",
+    "camelcase": "warn",
     "import/order": [
       "error",
       {
