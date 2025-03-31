@@ -50,7 +50,11 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
   console.log('--------> Postgres client connected.\n');
 
   try {
-    const formattedEvents = await getPyramidMintEventsAndFormat(hre);
+    const chainId = await hre.ethers.provider
+      .getNetwork()
+      .then((network) => network.chainId);
+
+    const formattedEvents = await getPyramidMintEventsAndFormat(hre, chainId);
 
     const eventsValues = Array.from(formattedEvents.values());
     console.log('Total events found: ', eventsValues.length);
@@ -62,10 +66,6 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
       const prev = addressToPyramidsCount.get(claimer) ?? 0;
       addressToPyramidsCount.set(claimer, prev + 1);
     });
-
-    const chainId = await hre.ethers.provider
-      .getNetwork()
-      .then((network) => network.chainId);
 
     // Process events in chunks
     const allMismatches: any[] = [];

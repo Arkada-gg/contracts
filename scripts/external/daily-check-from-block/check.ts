@@ -86,7 +86,7 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
     );
     console.log('Transactions that need to be added:', notExistedTxs.length);
     const alchemyData = await Promise.all(
-      notExistedTxs.map(({ raw }) => formatLogToAlchemyWebhook(raw)),
+      notExistedTxs.map(({ raw }) => formatLogToAlchemyWebhook(raw, 1868)),
     );
     const webhookData = alchemyData.map((data) => signAlchemyWebhook(data));
 

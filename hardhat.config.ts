@@ -39,6 +39,7 @@ const config: HardhatUserConfig = {
       localhost: DEPLOYER,
       sepolia: DEPLOYER,
       soneium: DEPLOYER,
+      sonic: DEPLOYER,
     },
   },
   verify: {
@@ -48,6 +49,7 @@ const config: HardhatUserConfig = {
   },
   networks: {
     soneium: getNetworkConfig('soneium', []),
+    sonic: getNetworkConfig('sonic', []),
     sepolia: getNetworkConfig('sepolia'),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     hardhat: FORKING_NETWORK

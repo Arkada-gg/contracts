@@ -1,5 +1,16 @@
 import { ethers } from 'ethers';
 
+const getNetworkName = (chainId: number) => {
+  switch (chainId) {
+    case 1868:
+      return 'SONEIUM_MAINNET';
+    case 146:
+      return 'SONIC_MAINNET';
+    default:
+      throw new Error('Invalid chain id');
+  }
+};
+
 interface AlchemyWebhookEvent {
   webhookId: string;
   id: string;
@@ -47,8 +58,13 @@ interface AlchemyWebhookEvent {
   };
 }
 
-export function formatLogToAlchemyWebhook(log: any): AlchemyWebhookEvent {
+export function formatLogToAlchemyWebhook(
+  log: any,
+  chainId: number,
+): AlchemyWebhookEvent {
   const ts = Date.now();
+
+  const network = getNetworkName(chainId);
 
   return {
     webhookId: `wh_${Math.random().toString(36).slice(2, 16)}`,
@@ -95,7 +111,7 @@ export function formatLogToAlchemyWebhook(log: any): AlchemyWebhookEvent {
         },
       },
       sequenceNumber: `100000000${Math.floor(Math.random() * 10000000000)}`,
-      network: 'SONEIUM_MAINNET',
+      network,
     },
   };
 }

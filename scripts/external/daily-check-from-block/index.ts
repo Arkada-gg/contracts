@@ -198,7 +198,7 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
     // }
 
     const alchemyData = await Promise.all(
-      formattedEvents.map(({ raw }) => formatLogToAlchemyWebhook(raw)),
+      formattedEvents.map(({ raw }) => formatLogToAlchemyWebhook(raw, 1868)),
     );
     const webhookData = alchemyData.map((data) => signAlchemyWebhook(data));
 
