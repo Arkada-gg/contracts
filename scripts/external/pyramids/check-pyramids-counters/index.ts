@@ -2,7 +2,7 @@ import * as hre from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Client } from 'pg';
 
-import { getPyramidMintEventsAndFormat } from '../helpers/get-and-format-events';
+import { getPyramidMintEventsAndFormat } from '../../helpers/get-and-format-events';
 
 const CHUNK_SIZE = 1000;
 

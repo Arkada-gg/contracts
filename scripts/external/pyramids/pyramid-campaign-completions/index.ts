@@ -4,11 +4,11 @@ import { Client } from 'pg';
 
 import { delay } from '../../../../helpers/utils';
 import { formatLogToAlchemyWebhook } from '../../helpers/format-logs';
+import { getPyramidMintEventsAndFormat } from '../../helpers/get-and-format-events';
 import { signAlchemyWebhook } from '../../helpers/sign-webhook-data';
-import { getPyramidMintEventsAndFormat } from '../helpers/get-and-format-events';
 
 const WEBHOOK_URL = process.env.ALCHEMY_WEBHOOK_URL;
-const CHUNK_SIZE = 1000; // Process 100 records at a time
+const CHUNK_SIZE = 3000; // Process 1000 records at a time
 
 const blackList = [
   '0x4e5a45020d670523378127c6f713de543a032236718ca1e783a253840103cf59',

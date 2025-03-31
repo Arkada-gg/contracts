@@ -2,9 +2,9 @@ import * as hre from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Client } from 'pg';
 
-import { checkPyramidMint } from './helpers/check-pyramid-mint';
-
 import { delay } from '../../../helpers/utils';
+import { checkNFTAndGetMultiplier } from '../helpers/check-nfts';
+import { getPyramidMintEventsAndFormat } from '../helpers/get-and-format-events';
 
 const func = async (hre: HardhatRuntimeEnvironment) => {
   const client = new Client({
@@ -13,6 +13,12 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
   console.log('--------> Connecting to postgres...');
   await client.connect();
   console.log('--------> Postgres client connected.\n');
+
+  const formattedEvents = await getPyramidMintEventsAndFormat(hre);
+  console.log(
+    'Total events found: ',
+    Array.from(formattedEvents.values()).length,
+  );
 
   const mysteryResponse = await client.query(
     `SELECT id,rewards,pyramid_required FROM campaigns WHERE event_type = 'mystery'`,
@@ -79,8 +85,8 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
       console.log('USER OPS: user address: ', userAddress);
 
       if (pyramidRequired) {
-        const isMinted = await checkPyramidMint(hre, userAddress, campaignId);
-        if (!isMinted) {
+        const mintInfo = formattedEvents.get(`${campaignId}-${userAddress}`);
+        if (!mintInfo) {
           console.log('USER OPS: Pyramid not minted 🚨, skipping\n');
           continue;
         }
@@ -88,6 +94,11 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
       }
 
       try {
+        const multiplier = await checkNFTAndGetMultiplier(hre, userAddress);
+        console.log('USER OPS: NFT multiplier: ', multiplier);
+        const expectedRewards = Math.floor(campaignRewards * multiplier);
+        console.log('USER OPS: expected rewards: ', expectedRewards);
+
         await client.query('BEGIN');
 
         console.log(
@@ -139,6 +150,7 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
     await delay(3000);
   }
 
+  await client.end();
   console.log('\n Total operated addresses: %s ', totalUsersOperated);
   process.exit(0);
 };

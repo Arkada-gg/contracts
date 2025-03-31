@@ -2,7 +2,7 @@ import { LogDescription } from '@ethersproject/abi';
 import { Log } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-const ADDRESS = '0x30410050CB1eBCF21741c9D3F817C386401f82fd';
+const ADDRESS = '0x30410050CB1eBCF21741c9D3F817C386401f82fd'; // Soneium
 const PYRAMID_CLAIM_TOPIC =
   '0x7b7188b14b1a89406b609ab3d2c18b85c1e7ee16c9165d63fc527274207e494f';
 const CHUNK_SIZE = 20000; // Number of blocks to fetch in each chunk
@@ -12,7 +12,7 @@ export const getPyramidMintEventsAndFormat = async (
 ) => {
   const provider = hre.ethers.provider;
   const currentBlock = await provider.getBlockNumber();
-  const startBlock = 4627750;
+  const startBlock = 4627750; // Soneium
 
   const pyramidAbi = [
     'event PyramidClaim(string questId, uint256 indexed tokenId, address indexed claimer, uint256 price, uint256 rewards, uint256 issueNumber, string walletProvider, string embedOrigin)',
