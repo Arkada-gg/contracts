@@ -21,9 +21,12 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
         `
     SELECT * FROM user_points
     WHERE point_type = 'base_campaign'
+    AND created_at >= to_timestamp($1)
     ORDER BY created_at ASC;`,
+        [Math.floor(new Date('2025-03-17 00:00:00').getTime() / 1_000_000)],
       )
     ).rows;
+    console.log(usersPoints.length);
 
     const pointsSumByIserAddress = new Map<string, IData>();
     usersPoints.forEach((p) => {
@@ -45,16 +48,22 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
     campaigns.forEach((c) => {
       rewardsById.set(
         c.id,
-        c.rewards.reduce((r, c) => r + Number(c.value), 0),
+        c.rewards.reduce(
+          (r: number, c: { value: string }) => r + Number(c.value),
+          0,
+        ),
       );
     });
 
     const campaignsCompletitions = (
       await client.query(
         `
-    SELECT campaign_id,user_address FROM campaign_completions;`,
+    SELECT campaign_id,user_address FROM campaign_completions
+    WHERE completed_at >= to_timestamp($1);`,
+        [Math.floor(new Date('2025-03-17 00:00:00').getTime() / 1_000_000)],
       )
     ).rows;
+    console.log(campaignsCompletitions.length);
     const totalCompleted = new Map<string, IData>();
     campaignsCompletitions.forEach((p) => {
       const address = p.user_address.toLowerCase();
@@ -73,6 +82,7 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
       cc: number;
       ccCount: number;
       diff: number;
+      diffCount: number;
     }[] = [];
     Array.from(totalCompleted.keys()).forEach((address) => {
       const cc = totalCompleted.get(address);
@@ -80,7 +90,7 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
       const ccPoints = cc?.points ?? 0;
       const upPoints = up?.points ?? 0;
       const upCount = up?.count ?? 0;
-      const ccCount = up?.count ?? 0;
+      const ccCount = cc?.count ?? 0;
       if (upCount !== ccCount) {
         mismatched.push({
           address,
@@ -89,10 +99,15 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
           cc: ccPoints,
           ccCount,
           diff: Math.max(upPoints, ccPoints) - Math.min(upPoints, ccPoints),
+          diffCount: Math.max(upCount, ccCount) - Math.min(upCount, ccCount),
         });
       }
     });
-    console.log(mismatched);
+    // const find = mismatched.find(
+    //   ({ address }) => '0x4ddbe53bffcb118fd92c70815f984230a0926613' === address,
+    // );
+    // console.log(find);
+    console.log(mismatched.sort((a, b) => a.diffCount - b.diffCount)[0]);
     console.log('Missmatched count: ', mismatched.length);
   } catch (error) {
     console.error('Error processing campaign completions:', error);

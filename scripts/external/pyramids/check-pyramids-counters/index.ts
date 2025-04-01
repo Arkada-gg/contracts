@@ -8,30 +8,26 @@ const CHUNK_SIZE = 1000;
 
 async function processEventsChunk(
   client: Client,
-  eventsChunk: any[],
+  eventsChunk: string[],
   chainId: number,
   addressToPyramidsCount: Map<string, number>,
 ): Promise<any[]> {
   const valuesPlaceholder = eventsChunk
-    .map(
-      (_, i) =>
-        `($${i * 3 + 1}::TEXT, $${i * 3 + 2}::INT, $${i * 3 + 3}::UUID)`,
-    )
+    .map((_, i) => `($${i * 2 + 1}::TEXT, $${i * 2 + 2}::INT)`)
     .join(', ');
 
-  const values = eventsChunk.flatMap(({ decoded }) => {
-    const claimer = decoded.args.claimer.toLowerCase();
-    return [claimer, addressToPyramidsCount.get(claimer), decoded.args.questId];
+  const values = eventsChunk.flatMap((address) => {
+    const claimer = address.toLowerCase();
+    return [claimer, addressToPyramidsCount.get(claimer)];
   });
 
   const query = `
-    WITH input_data (user_address, count, campaign_id) AS (
+    WITH input_data (user_address, count) AS (
       VALUES ${valuesPlaceholder}
     )
     SELECT
       input_data.user_address,
-      input_data.count,
-      input_data.campaign_id
+      input_data.count
     FROM input_data
     LEFT JOIN users c 
       ON c.address = input_data.user_address
@@ -67,13 +63,15 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
       addressToPyramidsCount.set(claimer, prev + 1);
     });
 
+    const uniqueAddressesLength = Array.from(addressToPyramidsCount.keys());
+
     // Process events in chunks
     const allMismatches: any[] = [];
-    for (let i = 0; i < eventsValues.length; i += CHUNK_SIZE) {
-      const chunk = eventsValues.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < uniqueAddressesLength.length; i += CHUNK_SIZE) {
+      const chunk = uniqueAddressesLength.slice(i, i + CHUNK_SIZE);
       console.log(
         `Processing chunk ${i / CHUNK_SIZE + 1} of ${Math.ceil(
-          eventsValues.length / CHUNK_SIZE,
+          uniqueAddressesLength.length / CHUNK_SIZE,
         )}`,
       );
       const chunkMismatches = await processEventsChunk(
@@ -88,7 +86,7 @@ const func = async (hre: HardhatRuntimeEnvironment) => {
     console.log(`Found ${allMismatches.length} total mismatches`);
 
     // Start transaction
-    await client.query('BEGIN');
+    // await client.query('BEGIN');
 
     try {
       const dataToSetMap = new Map();
